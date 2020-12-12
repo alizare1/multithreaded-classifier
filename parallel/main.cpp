@@ -1,8 +1,4 @@
 #include <iostream>
-#include <unistd.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <vector>
 #include <fstream>
 #include <sstream> 
@@ -14,13 +10,17 @@
 using namespace std;
 
 
-#define THREAD_NUMBER 4
+constexpr int THREAD_NUMBER = 4;
+constexpr int BIAS_INDEX = 20;
+constexpr int PRICE_INDEX = 20;
+constexpr int COLUMN_COUNT = 21;
+constexpr int ADDRESS_INDEX = 1;
 
 string address;
-vector<vector<vector<float>>> train_data(THREAD_NUMBER, vector<vector<float>>(21));
-vector<vector<float>> weights_data(21);
-vector<vector<pair<float, float>>> all_minmax(THREAD_NUMBER, vector<pair<float, float>>(20));
-vector<pair<float, float>> final_minmax(20);
+vector<vector<vector<float>>> train_data(THREAD_NUMBER, vector<vector<float>>(COLUMN_COUNT));
+vector<vector<float>> weights_data(COLUMN_COUNT);
+vector<vector<pair<float, float>>> all_minmax(THREAD_NUMBER, vector<pair<float, float>>(COLUMN_COUNT - 1));
+vector<pair<float, float>> final_minmax(COLUMN_COUNT - 1);
 vector<pair<int, int>> thread_results(THREAD_NUMBER);
 bool initial_minmax = true;
 
@@ -62,10 +62,10 @@ void classify(
 
     for (uint i = 0; i < train[0].size(); i++) {
         float scores[4] = {
-            weights[20][0], 
-            weights[20][1], 
-            weights[20][2], 
-            weights[20][3]
+            weights[BIAS_INDEX][0], 
+            weights[BIAS_INDEX][1], 
+            weights[BIAS_INDEX][2], 
+            weights[BIAS_INDEX][3]
         };
         for (uint j = 0; j < train.size() - 1; j++) {
             scores[0] += train[j][i] * weights[j][0];
@@ -81,7 +81,7 @@ void classify(
 void update_thread_results(long tid, const vector<int> &predict) {
     int count = 0;
     for (uint i = 0; i < predict.size(); i++) {
-        if (predict[i] == train_data[tid][20][i])
+        if (predict[i] == train_data[tid][PRICE_INDEX][i])
             count++;
     }
     thread_results[tid].first = predict.size();
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    address = string(argv[1]);
+    address = string(argv[ADDRESS_INDEX]);
     pthread_t thread[THREAD_NUMBER];
 
     for (long tid = 0; tid < THREAD_NUMBER; tid++) {
