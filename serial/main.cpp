@@ -33,15 +33,27 @@ void read_train(vector<vector<float>> &train, ifstream &file) {
 }
 
 void normalize(vector<vector<float>> &train) {
-    for (auto col : train) {
-        if (col == train.end() - 1)
-            break;
+    float min, max;
+    for (auto &col : train) {
+        if (&col == &train.back())
+            continue;
+        
+        auto minmax = minmax_element(begin(col), end(col));
+        if (*minmax.first == 0 && *minmax.second == 1)
+            continue;
+        
+        min = *minmax.first;
+        max = *minmax.second;
+        
+        for (auto &num : col) {
+            num = (num - min) / (max - min);
+        }
+        
     }
 }
 
 int main(int argc, char *argv[]) {
     ifstream train, weights;
-    string line;
 
     if (argc < 2) {
         cerr << "No arguments were provided" << endl;
@@ -53,12 +65,8 @@ int main(int argc, char *argv[]) {
 
     vector<vector<float>> train_data(21);
     read_train(train_data, train);
-
-    // cout << train_data[0][4] << endl;
-    auto a = minmax_element(begin(train_data[2]),
-        end(train_data[2]));
-    cout << *(a.first) << " " << *(a.second) << endl;
     
+    normalize(train_data);
 
     exit(EXIT_SUCCESS);
 }
