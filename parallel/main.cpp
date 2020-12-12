@@ -21,6 +21,7 @@ vector<vector<vector<float>>> train_data(THREAD_NUMBER, vector<vector<float>>(21
 vector<vector<float>> weights_data(21);
 vector<vector<pair<float, float>>> all_minmax(THREAD_NUMBER, vector<pair<float, float>>(20));
 vector<pair<float, float>> final_minmax(20);
+vector<pair<int, int>> thread_results(THREAD_NUMBER);
 bool initial_minmax = true;
 
 void read_csv(vector<vector<float>> &vec, ifstream &file) {
@@ -44,22 +45,12 @@ void read_csv(vector<vector<float>> &vec, ifstream &file) {
 }
 
 void normalize(vector<vector<float>> &train) {
-    float min, max;
-    for (auto &col : train) {
-        if (&col == &train.back())
+    for (uint i = 0; i < final_minmax.size(); i++) {  
+        if (final_minmax[i].first == 0 && final_minmax[i].second == 1)
             continue;
-        
-        auto minmax = minmax_element(begin(col), end(col));
-        if (*minmax.first == 0 && *minmax.second == 1)
-            continue;
-        
-        min = *minmax.first;
-        max = *minmax.second;
-        
-        for (auto &num : col) {
-            num = (num - min) / (max - min);
-        }
-        
+
+        for (auto &num : train[i]) 
+            num = (num - final_minmax[i].first) / (final_minmax[i].second - final_minmax[i].first);
     }
 }
 
@@ -87,6 +78,16 @@ void classify(
     }
 }
 
+void update_thread_results(long tid, const vector<int> &predict) {
+    int count = 0;
+    for (uint i = 0; i < predict.size(); i++) {
+        if (predict[i] == train_data[tid][20][i])
+            count++;
+    }
+    thread_results[tid].first = predict.size();
+    thread_results[tid].second = count;
+}
+
 void* thread_read(void* tid) {
     long thread_id = (long) tid;
     ifstream train;
@@ -99,6 +100,17 @@ void* thread_read(void* tid) {
         all_minmax[thread_id][i].first = *col_minmax.first;
         all_minmax[thread_id][i].second = *col_minmax.second;
     }
+
+    pthread_exit(tid);
+}
+
+void* thread_calculate(void* tid) {
+    long thread_id = (long) tid;
+
+    vector<int> results;
+    normalize(train_data[thread_id]);
+    classify(train_data[thread_id], weights_data, results);
+    update_thread_results(thread_id, results);
 
     pthread_exit(tid);
 }
@@ -140,23 +152,29 @@ int main(int argc, char *argv[]) {
 		pthread_create(&thread[tid], NULL, thread_read, (void*)tid); 
 	}
 
-	for(long tid = 0; tid < THREAD_NUMBER; tid++)
-	{
+	for(long tid = 0; tid < THREAD_NUMBER; tid++) {
 		pthread_join(thread[tid], NULL);
         update_minmax(tid);
 	}
     
+    ifstream  weights;
+    weights.open(string(argv[1]) + "/weights.csv");
+    read_csv(weights_data, weights);
 
-    // ifstream  weights;
+    for (long tid = 0; tid < THREAD_NUMBER; tid++) {
+		pthread_create(&thread[tid], NULL, thread_calculate, (void*)tid); 
+	}
 
-    // weights.open(string(argv[1]) + "/weights.csv");
+    int total_count = 0, correct_count = 0;
 
-    // vector<int> results;
-    // read_csv(weights_data, weights);
-    // normalize(train_data);
-    // classify(train_data, weights_data, results);
+    for(long tid = 0; tid < THREAD_NUMBER; tid++) {
+		pthread_join(thread[tid], NULL);
+        total_count += thread_results[tid].first;
+        correct_count += thread_results[tid].second;
+	}
     
-    // printf("%.2f\n", get_accuracy(train_data[20], results) * 100);
+    float accuracy = (float) correct_count / (float) total_count;
+    printf("%.2f\n", accuracy * 100);
 
 
 
