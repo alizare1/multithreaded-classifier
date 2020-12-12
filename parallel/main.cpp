@@ -115,15 +115,6 @@ void* thread_calculate(void* tid) {
     pthread_exit(tid);
 }
 
-float get_accuracy(const vector<float> &answer, const vector<int> &predict) {
-    int count = 0;
-    for (uint i = 0; i < answer.size(); i++)
-        if (answer[i] == predict[i])
-            count++;
-
-    return (float) count / (float) answer.size();
-}
-
 void update_minmax(long tid) {
     for (uint i = 0; i < final_minmax.size(); i++) {
         if (initial_minmax) {
