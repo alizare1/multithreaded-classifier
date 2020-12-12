@@ -1,8 +1,4 @@
 #include <iostream>
-#include <unistd.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <vector>
 #include <fstream>
 #include <sstream> 
@@ -11,6 +7,11 @@
 #include <limits>
 
 using namespace std;
+
+constexpr int BIAS_INDEX = 20;
+constexpr int PRICE_INDEX = 20;
+constexpr int COLUMN_COUNT = 21;
+constexpr int ADDRESS_INDEX = 1;
 
 
 void read_csv(vector<vector<float>> &vec, ifstream &file) {
@@ -61,10 +62,10 @@ void classify(
 
     for (uint i = 0; i < train[0].size(); i++) {
         float scores[4] = {
-            weights[20][0], 
-            weights[20][1], 
-            weights[20][2], 
-            weights[20][3]
+            weights[BIAS_INDEX][0], 
+            weights[BIAS_INDEX][1], 
+            weights[BIAS_INDEX][2], 
+            weights[BIAS_INDEX][3]
         };
         for (uint j = 0; j < train.size() - 1; j++) {
             scores[0] += train[j][i] * weights[j][0];
@@ -94,17 +95,17 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    train.open(string(argv[1]) + "/train.csv");
-    weights.open(string(argv[1]) + "/weights.csv");
+    train.open(string(argv[ADDRESS_INDEX]) + "/train.csv");
+    weights.open(string(argv[ADDRESS_INDEX]) + "/weights.csv");
 
-    vector<vector<float>> train_data(21), weights_data(21);
+    vector<vector<float>> train_data(COLUMN_COUNT), weights_data(COLUMN_COUNT);
     vector<int> results;
     read_csv(train_data, train);
     read_csv(weights_data, weights);
     normalize(train_data);
     classify(train_data, weights_data, results);
     
-    printf("%.2f\n", get_accuracy(train_data[20], results) * 100);
+    printf("%.2f\n", get_accuracy(train_data[PRICE_INDEX], results) * 100);
 
 
 
