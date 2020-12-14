@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     normalize(train_data);
     classify(train_data, weights_data, results);
     
-    printf("%.2f\n", get_accuracy(train_data[PRICE_INDEX], results) * 100);
+    printf("Accuracy: %.2f%%\n", get_accuracy(train_data[PRICE_INDEX], results) * 100);
 
 
 

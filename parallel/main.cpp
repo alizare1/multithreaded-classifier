@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 	}
     
     float accuracy = (float) correct_count / (float) total_count;
-    printf("%.2f\n", accuracy * 100);
+    printf("Accuracy: %.2f%%\n", accuracy * 100);
 
 
 
